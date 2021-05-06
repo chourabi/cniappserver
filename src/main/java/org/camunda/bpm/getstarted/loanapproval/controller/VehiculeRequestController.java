@@ -8,10 +8,12 @@ import java.util.Optional;
 import javax.servlet.http.HttpServletRequest;
 
 import org.camunda.bpm.engine.RuntimeService;
+import org.camunda.bpm.engine.runtime.ProcessInstance;
 import org.camunda.bpm.getstarted.loanapproval.entitys.Notifications;
 import org.camunda.bpm.getstarted.loanapproval.entitys.RequestsPassengers;
 import org.camunda.bpm.getstarted.loanapproval.entitys.VehiculeRequest;
 import org.camunda.bpm.getstarted.loanapproval.entitys.Vehicules;
+import org.camunda.bpm.getstarted.loanapproval.message.request.RefuseModel;
 import org.camunda.bpm.getstarted.loanapproval.message.request.VehiculeRequestModel;
 import org.camunda.bpm.getstarted.loanapproval.message.response.RequestVehiculeItem;
 import org.camunda.bpm.getstarted.loanapproval.model.User;
@@ -59,7 +61,8 @@ public class VehiculeRequestController {
 
 	
 	
-	
+
+	// admin approve
 	@GetMapping("/approve/{id}")
 	public VehiculeRequest approveRequest(@PathVariable(value ="id") Long id){
 		VehiculeRequest tmp =  this.vehiculeRequestRepository.findById(id).get();
@@ -70,6 +73,68 @@ public class VehiculeRequestController {
 		
 		n.setTitle("Vehicule request");
 		n.setMessage("Your véhicule request is in treatment and approved by the director, and wiating for park manager approval");
+		long millis=System.currentTimeMillis();  
+		n.setAdddate(   new Date(millis)  );
+		n.setSeen(false);
+		n.setUser(tmp.getEmployee());
+		this.notificationsRepository.save(n);
+		return this.vehiculeRequestRepository.save(tmp);
+	}
+	
+	@GetMapping("/approve-parc/{id}")
+	public VehiculeRequest approveParcRequest(@PathVariable(value ="id") Long id){
+		VehiculeRequest tmp =  this.vehiculeRequestRepository.findById(id).get();
+		tmp.setStatus(2);
+		Vehicules v = tmp.getVehicule();
+		
+		v.setIsOut(true);
+		
+		// create notifications
+		Notifications n = new Notifications();
+		
+		n.setTitle("Vehicule request");
+		n.setMessage("Your véhicule request is approved by the parc manager, you can have access to your vehicule.");
+		long millis=System.currentTimeMillis();  
+		n.setAdddate(   new Date(millis)  );
+		n.setSeen(false);
+		n.setUser(tmp.getEmployee());
+		this.notificationsRepository.save(n);
+		return this.vehiculeRequestRepository.save(tmp);
+	}
+	
+	
+	@PostMapping("/refuse")
+	public VehiculeRequest refuseRequest(@RequestBody RefuseModel model){
+		VehiculeRequest tmp =  this.vehiculeRequestRepository.findById(model.getId()).get();
+		tmp.setStatus(3);
+		tmp.setCancelReason(model.getReason());
+		
+		
+		// create notifications
+		Notifications n = new Notifications();
+		
+		n.setTitle("Vehicule request");
+		n.setMessage("Your véhicule request is refused by the director.");
+		long millis=System.currentTimeMillis();  
+		n.setAdddate(   new Date(millis)  );
+		n.setSeen(false);
+		n.setUser(tmp.getEmployee());
+		this.notificationsRepository.save(n);
+		return this.vehiculeRequestRepository.save(tmp);
+	}
+	
+	@PostMapping("/refuse-parc")
+	public VehiculeRequest refuseParcRequest(@RequestBody RefuseModel model){
+		VehiculeRequest tmp =  this.vehiculeRequestRepository.findById(model.getId()).get();
+		tmp.setStatus(3);
+		tmp.setCancelReason(model.getReason());
+		
+		
+		// create notifications
+		Notifications n = new Notifications();
+		
+		n.setTitle("Vehicule request");
+		n.setMessage("Your véhicule request is refused by the parc manager.");
 		long millis=System.currentTimeMillis();  
 		n.setAdddate(   new Date(millis)  );
 		n.setSeen(false);
@@ -198,7 +263,10 @@ public class VehiculeRequestController {
 		 
 		 this.vehiculeRequestRepository.save(v);
 		 
-		 runtimeService.startProcessInstanceByKey("vehicule_request");
+		 ProcessInstance  process = runtimeService.startProcessInstanceByKey("vehicule_request");
+		 runtimeService.setVariable(process.getId(), "status", 1);
+		 
+		 
 		 
 		 // update passengers
 		 List<Long> ids = model.getPassengers();
@@ -213,6 +281,17 @@ public class VehiculeRequestController {
 		 }
 
 		 
+		 Notifications n = new Notifications();
+			
+			n.setTitle("Vehicule request");
+			String fullnameEmployee = this.userRepository.findById(model.getEmployee_id()).get().getName();
+			n.setMessage("You have a new vehicule request from "+fullnameEmployee+".");
+			long millis=System.currentTimeMillis();  
+			n.setAdddate(   new Date(millis)  );
+			n.setSeen(false);
+			n.setUser(this.userRepository.findByUsername("super_admin").get());
+			this.notificationsRepository.save(n);
+			
 		 return v;
 	 }
 	 

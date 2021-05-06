@@ -30,6 +30,7 @@ public class VehiculesController {
 	
 	 @PostMapping("/add")
 	 public Vehicules modiferProduit(@RequestBody Vehicules vm ){
+		 vm.setIsOut(false);
 		 return this.vehiculesRepository.save(vm);
 		 
 	 }
@@ -52,6 +53,8 @@ public class VehiculesController {
 		 v.setMark(vm.getMark());
 		 v.setNote(vm.getNote());
 		 v.setRegistrationPlate(vm.getRegistrationPlate());
+		 v.setIsOut(vm.getIsOut());
+		 
 		 
 		 
 		 

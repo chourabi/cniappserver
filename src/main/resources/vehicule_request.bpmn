@@ -1,37 +1,85 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:camunda="http://camunda.org/schema/1.0/bpmn" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:modeler="http://camunda.org/schema/modeler/1.0" id="Definitions_0ao8qei" targetNamespace="http://bpmn.io/schema/bpmn" exporter="Camunda Modeler" exporterVersion="4.7.0" modeler:executionPlatform="Camunda Platform" modeler:executionPlatformVersion="7.14.0">
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:camunda="http://camunda.org/schema/1.0/bpmn" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:bioc="http://bpmn.io/schema/bpmn/biocolor/1.0" xmlns:modeler="http://camunda.org/schema/modeler/1.0" id="Definitions_0ao8qei" targetNamespace="http://bpmn.io/schema/bpmn" exporter="Camunda Modeler" exporterVersion="4.7.0" modeler:executionPlatform="Camunda Platform" modeler:executionPlatformVersion="7.14.0">
   <bpmn:process id="vehicule_request" isExecutable="true">
     <bpmn:startEvent id="StartEvent_1">
       <bpmn:outgoing>Flow_09o91n7</bpmn:outgoing>
     </bpmn:startEvent>
     <bpmn:sequenceFlow id="Flow_09o91n7" sourceRef="StartEvent_1" targetRef="new_request_v" />
     <bpmn:intermediateThrowEvent id="Event_0hkh0gg">
-      <bpmn:incoming>Flow_0ejyf4l</bpmn:incoming>
+      <bpmn:incoming>Flow_1vivbvy</bpmn:incoming>
     </bpmn:intermediateThrowEvent>
-    <bpmn:sequenceFlow id="Flow_0ejyf4l" sourceRef="new_request_v" targetRef="Event_0hkh0gg" />
-    <bpmn:userTask id="new_request_v" name="Check the request" camunda:assignee="demo">
+    <bpmn:userTask id="new_request_v" name="Check employee the request" camunda:assignee="demo">
+      <bpmn:extensionElements>
+        <camunda:inputOutput>
+          <camunda:outputParameter name="status">1</camunda:outputParameter>
+        </camunda:inputOutput>
+      </bpmn:extensionElements>
       <bpmn:incoming>Flow_09o91n7</bpmn:incoming>
-      <bpmn:outgoing>Flow_0ejyf4l</bpmn:outgoing>
+      <bpmn:outgoing>Flow_0pwa27j</bpmn:outgoing>
     </bpmn:userTask>
+    <bpmn:exclusiveGateway id="Gateway_01viuir">
+      <bpmn:incoming>Flow_0pwa27j</bpmn:incoming>
+      <bpmn:outgoing>Flow_1vivbvy</bpmn:outgoing>
+      <bpmn:outgoing>Flow_04y8nvs</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+    <bpmn:sequenceFlow id="Flow_1vivbvy" sourceRef="Gateway_01viuir" targetRef="Event_0hkh0gg">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">${status == 3}</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="Flow_04y8nvs" sourceRef="Gateway_01viuir" targetRef="confirmVehiculeDemande">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">${status == 1}</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:userTask id="confirmVehiculeDemande" name="confirm Vehicule Demande in park" camunda:assignee="parkManager">
+      <bpmn:incoming>Flow_04y8nvs</bpmn:incoming>
+      <bpmn:outgoing>Flow_06l6npc</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:endEvent id="Event_178j594">
+      <bpmn:incoming>Flow_06l6npc</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:sequenceFlow id="Flow_06l6npc" sourceRef="confirmVehiculeDemande" targetRef="Event_178j594" />
+    <bpmn:sequenceFlow id="Flow_0pwa27j" sourceRef="new_request_v" targetRef="Gateway_01viuir" />
   </bpmn:process>
   <bpmndi:BPMNDiagram id="BPMNDiagram_1">
     <bpmndi:BPMNPlane id="BPMNPlane_1" bpmnElement="vehicule_request">
-      <bpmndi:BPMNEdge id="Flow_09o91n7_di" bpmnElement="Flow_09o91n7">
-        <di:waypoint x="188" y="120" />
-        <di:waypoint x="270" y="120" />
+      <bpmndi:BPMNEdge id="Flow_0pwa27j_di" bpmnElement="Flow_0pwa27j">
+        <di:waypoint x="350" y="120" />
+        <di:waypoint x="480" y="120" />
+        <di:waypoint x="480" y="155" />
       </bpmndi:BPMNEdge>
-      <bpmndi:BPMNEdge id="Flow_0ejyf4l_di" bpmnElement="Flow_0ejyf4l">
-        <di:waypoint x="370" y="120" />
-        <di:waypoint x="452" y="120" />
+      <bpmndi:BPMNEdge id="Flow_06l6npc_di" bpmnElement="Flow_06l6npc">
+        <di:waypoint x="530" y="360" />
+        <di:waypoint x="612" y="360" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_04y8nvs_di" bpmnElement="Flow_04y8nvs">
+        <di:waypoint x="480" y="205" />
+        <di:waypoint x="480" y="320" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_1vivbvy_di" bpmnElement="Flow_1vivbvy">
+        <di:waypoint x="505" y="180" />
+        <di:waypoint x="612" y="180" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_09o91n7_di" bpmnElement="Flow_09o91n7">
+        <di:waypoint x="188" y="180" />
+        <di:waypoint x="214" y="180" />
+        <di:waypoint x="214" y="120" />
+        <di:waypoint x="250" y="120" />
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNShape id="_BPMNShape_StartEvent_2" bpmnElement="StartEvent_1">
-        <dc:Bounds x="152" y="102" width="36" height="36" />
+        <dc:Bounds x="152" y="162" width="36" height="36" />
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="Event_0hkh0gg_di" bpmnElement="Event_0hkh0gg">
-        <dc:Bounds x="452" y="102" width="36" height="36" />
+        <dc:Bounds x="612" y="162" width="36" height="36" />
       </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="Activity_02i6wgz_di" bpmnElement="new_request_v">
-        <dc:Bounds x="270" y="80" width="100" height="80" />
+      <bpmndi:BPMNShape id="Gateway_18xi9wu_di" bpmnElement="Gateway_01viuir" isMarkerVisible="true">
+        <dc:Bounds x="455" y="155" width="50" height="50" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_1y0udt0_di" bpmnElement="confirmVehiculeDemande">
+        <dc:Bounds x="430" y="320" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Event_178j594_di" bpmnElement="Event_178j594">
+        <dc:Bounds x="612" y="342" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_02i6wgz_di" bpmnElement="new_request_v" bioc:stroke="black" bioc:fill="white">
+        <dc:Bounds x="250" y="80" width="100" height="80" />
       </bpmndi:BPMNShape>
     </bpmndi:BPMNPlane>
   </bpmndi:BPMNDiagram>

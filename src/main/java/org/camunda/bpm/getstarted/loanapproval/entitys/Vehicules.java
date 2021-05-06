@@ -39,11 +39,22 @@ public class Vehicules {
     @Size(min=3, max = 50)
     private String date;
 	
+
+    private Boolean isOut;
+	
 	
 
     
     
     
+
+	public Boolean getIsOut() {
+		return isOut;
+	}
+
+	public void setIsOut(Boolean isOut) {
+		this.isOut = isOut;
+	}
 
 	public Vehicules(Long id, @NotBlank @Size(min = 3, max = 50) String note,
 			@NotBlank @Size(min = 3, max = 50) String registrationPlate, @NotBlank @Size(min = 3, max = 50) String mark,
