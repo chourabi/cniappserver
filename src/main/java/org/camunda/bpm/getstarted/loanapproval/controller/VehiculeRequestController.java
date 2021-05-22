@@ -1,6 +1,9 @@
 package org.camunda.bpm.getstarted.loanapproval.controller;
 
 import java.sql.Date;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -9,6 +12,7 @@ import javax.servlet.http.HttpServletRequest;
 
 import org.camunda.bpm.engine.RuntimeService;
 import org.camunda.bpm.engine.runtime.ProcessInstance;
+import org.camunda.bpm.getstarted.loanapproval.entitys.Drivers;
 import org.camunda.bpm.getstarted.loanapproval.entitys.Notifications;
 import org.camunda.bpm.getstarted.loanapproval.entitys.RequestsPassengers;
 import org.camunda.bpm.getstarted.loanapproval.entitys.VehiculeRequest;
@@ -16,7 +20,9 @@ import org.camunda.bpm.getstarted.loanapproval.entitys.Vehicules;
 import org.camunda.bpm.getstarted.loanapproval.message.request.RefuseModel;
 import org.camunda.bpm.getstarted.loanapproval.message.request.VehiculeRequestModel;
 import org.camunda.bpm.getstarted.loanapproval.message.response.RequestVehiculeItem;
+import org.camunda.bpm.getstarted.loanapproval.model.ResponseJson;
 import org.camunda.bpm.getstarted.loanapproval.model.User;
+import org.camunda.bpm.getstarted.loanapproval.repository.DriversRepository;
 import org.camunda.bpm.getstarted.loanapproval.repository.NotificationsRepository;
 import org.camunda.bpm.getstarted.loanapproval.repository.RequestsPassengersRepository;
 import org.camunda.bpm.getstarted.loanapproval.repository.UserRepository;
@@ -58,7 +64,8 @@ public class VehiculeRequestController {
 
 	@Autowired
 	NotificationsRepository notificationsRepository;
-
+	@Autowired
+	DriversRepository driversRepository;
 	
 	
 
@@ -81,13 +88,20 @@ public class VehiculeRequestController {
 		return this.vehiculeRequestRepository.save(tmp);
 	}
 	
-	@GetMapping("/approve-parc/{id}")
-	public VehiculeRequest approveParcRequest(@PathVariable(value ="id") Long id){
+	@GetMapping("/approve-parc/{id}/{idD}")
+	public VehiculeRequest approveParcRequest(@PathVariable(value ="id") Long id,@PathVariable(value ="idD") Long idD){
 		VehiculeRequest tmp =  this.vehiculeRequestRepository.findById(id).get();
+		Drivers driver =  this.driversRepository.findById(idD).get();
+		
+		tmp.setDriver(driver);
+		
+		driver.setOnMission(true);
+		this.driversRepository.save(driver);
+		
 		tmp.setStatus(2);
 		Vehicules v = tmp.getVehicule();
 		
-		v.setIsOut(true);
+		//v.setIsOut(true);
 		
 		// create notifications
 		Notifications n = new Notifications();
@@ -228,7 +242,9 @@ public class VehiculeRequestController {
         		
         	}
         	
-        	userRequests.add(item);
+        	if(item.getRequest() != null ) {
+        		userRequests.add(item);
+        	}
         }
         
         return userRequests;
@@ -241,9 +257,10 @@ public class VehiculeRequestController {
 	 
 	 @PostMapping("/add")
 
-	 public VehiculeRequest addNewRequest(@RequestBody VehiculeRequestModel model ){
+	 public ResponseJson addNewRequest(@RequestBody VehiculeRequestModel model ){
 		 
 		 VehiculeRequest v = new VehiculeRequest();
+		 ResponseJson res = new ResponseJson();
 		 
 		 v.setArrivalDate(model.getArrival_date());
 		 v.setArrivalLocation(model.getArrival_location());
@@ -253,46 +270,139 @@ public class VehiculeRequestController {
 		 v.setStartTime(model.getStart_time());
 		 
 		 v.setStatus(0);
-		 v.setVehicule(this.vehiculesRepository.findById(model.getVehicule_id()).get());
-		 
-		 
-
 		 v.setReason(model.getResaon());
 		 v.setCargo(model.getCargo());
 		 v.setEmployee(this.userRepository.findById(model.getEmployee_id()).get());
 		 
-		 this.vehiculeRequestRepository.save(v);
+		 //v.setVehicule(this.vehiculesRepository.findById(model.getVehicule_id()).get());
 		 
-		 ProcessInstance  process = runtimeService.startProcessInstanceByKey("vehicule_request");
-		 runtimeService.setVariable(process.getId(), "status", 1);
+		 // now we have to look for an avaivle vehicule
+		 
+		 Vehicules selectedVehicule = new Vehicules();
+		 
+		 List<Vehicules> allVehicules = this.vehiculesRepository.findAll();
+		 List<VehiculeRequest> allVehiculesRequests = this.vehiculeRequestRepository.findAll();
 		 
 		 
+		 boolean canHaveAVehicule = true;
 		 
-		 // update passengers
-		 List<Long> ids = model.getPassengers();
-		 
-		 for(Long id:ids) {
-			 RequestsPassengers  rp = new RequestsPassengers();
-			 
-			 rp.setPassenger(this.userRepository.findById(id).get());
-			 rp.setRequest(v);
-			 
-			 this.requestsPassengersRepository.save(rp);
+		 for(Vehicules tmp:allVehicules  ) {
+			 if( tmp.getIsOut() == false /* is available */ ) {
+				 // check for reservations date
+				 System.out.println("we found a vehicule");
+				 LocalDateTime startAtrequest = LocalDateTime.parse( v.getStartDate()+"T"+v.getStartTime() );
+				 LocalDateTime endsAtRequest = LocalDateTime.parse( v.getArrivalDate()+"T"+v.getArrivalTime() );
+				 
+				 
+				 
+
+				 if( allVehiculesRequests.isEmpty() ) {
+					 selectedVehicule = tmp;
+					 
+				 }else {
+					 
+					 boolean isReserved = false;
+					for(VehiculeRequest vr: allVehiculesRequests  ) {
+					 
+					 if( vr.getVehicule().getId() == tmp.getId() ) {
+						 
+						 // start date
+						 LocalDateTime oldStartAtrequest = LocalDateTime.parse( vr.getStartDate()+"T"+vr.getStartTime() );
+						 LocalDateTime oldEndsAtRequest = LocalDateTime.parse( vr.getArrivalDate()+"T"+vr.getArrivalTime() );
+						 
+						 
+						 
+						 long requestStartTime =startAtrequest.atZone(ZoneId.systemDefault()).toInstant().toEpochMilli();
+						 long requestEndTime =endsAtRequest.atZone(ZoneId.systemDefault()).toInstant().toEpochMilli();
+						 long oldRequestStartTime =oldStartAtrequest.atZone(ZoneId.systemDefault()).toInstant().toEpochMilli();
+						 long oldRequestEndTime =oldEndsAtRequest.atZone(ZoneId.systemDefault()).toInstant().toEpochMilli();
+						 
+						 
+						// case one
+						 if( (requestStartTime <= oldRequestStartTime ) && ( requestEndTime >= requestStartTime ) && ( requestEndTime <=  oldRequestEndTime ) ) {
+							 if( vr.getStatus() == 2 ) {
+								 isReserved = true;
+							 }
+						 }
+						 
+						// case two
+						 if( (requestStartTime == oldRequestStartTime ) && ( requestEndTime ==  oldRequestEndTime ) ) {
+							 if( vr.getStatus() == 2 ) {
+								 isReserved = true;
+							 }
+						 }
+						 
+						// case three
+						 if( (requestStartTime >= oldRequestStartTime ) && (requestStartTime <= oldRequestEndTime ) && ( requestEndTime >=  oldRequestEndTime ) ) {
+							 if( vr.getStatus() == 2 ) {
+								 isReserved = true;
+							 }
+						 }
+						 
+						 
+						 
+						 
+					 }
+					} 
+					
+					if(isReserved == false) {
+						selectedVehicule = tmp;
+					}
+				 }
+				 
+
+			 }
 		 }
+		 
+		 System.out.println(selectedVehicule.getId());
+		 
+		 if( selectedVehicule.getId() != null ) {
+			 v.setVehicule(selectedVehicule);
+			 this.vehiculeRequestRepository.save(v);
+			 
+			 ProcessInstance  process = runtimeService.startProcessInstanceByKey("vehicule_request");
+			 runtimeService.setVariable(process.getId(), "status", 1);
+			 
+			 
+			 
+			 // update passengers
+			 List<Long> ids = model.getPassengers();
+			 
+			 for(Long id:ids) {
+				 RequestsPassengers  rp = new RequestsPassengers();
+				 
+				 rp.setPassenger(this.userRepository.findById(id).get());
+				 rp.setRequest(v);
+				 
+				 this.requestsPassengersRepository.save(rp);
+			 }
+
+			 
+			 Notifications n = new Notifications();
+				
+				n.setTitle("Vehicule request");
+				String fullnameEmployee = this.userRepository.findById(model.getEmployee_id()).get().getName();
+				n.setMessage("You have a new vehicule request from "+fullnameEmployee+".");
+				long millis=System.currentTimeMillis();  
+				n.setAdddate(   new Date(millis)  );
+				n.setSeen(false);
+				n.setUser(this.userRepository.findByUsername("super_admin").get());
+				this.notificationsRepository.save(n);
+				
+				res.setSuccess(true);
+				res.setMessage("Your request is successfully added.");
+				
+			 return res;
+		 }else {
+				res.setSuccess(false);
+				res.setMessage("We have no véhicules availabale at the chosen dates.");
+			 return res;
+		 }
+		 
+		 
 
 		 
-		 Notifications n = new Notifications();
-			
-			n.setTitle("Vehicule request");
-			String fullnameEmployee = this.userRepository.findById(model.getEmployee_id()).get().getName();
-			n.setMessage("You have a new vehicule request from "+fullnameEmployee+".");
-			long millis=System.currentTimeMillis();  
-			n.setAdddate(   new Date(millis)  );
-			n.setSeen(false);
-			n.setUser(this.userRepository.findByUsername("super_admin").get());
-			this.notificationsRepository.save(n);
-			
-		 return v;
+		 
 	 }
 	 
 }

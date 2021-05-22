@@ -19,6 +19,46 @@ public class Drivers {
 	@NotBlank
     @Size(min=3, max = 50)
     private String name;
+	
+	@NotBlank
+    @Size(min=3, max = 50)
+    private String email;
+	
+	
+	@NotBlank
+    @Size(min=3, max = 50)
+    private String phone;
+	
+	
+    private boolean isOnMission;
+	
+	
+	
+	
+
+	public boolean isOnMission() {
+		return isOnMission;
+	}
+
+	public void setOnMission(boolean isOnMission) {
+		this.isOnMission = isOnMission;
+	}
+
+	public String getEmail() {
+		return email;
+	}
+
+	public void setEmail(String email) {
+		this.email = email;
+	}
+
+	public String getPhone() {
+		return phone;
+	}
+
+	public void setPhone(String phone) {
+		this.phone = phone;
+	}
 
 	public Long getId() {
 		return id;

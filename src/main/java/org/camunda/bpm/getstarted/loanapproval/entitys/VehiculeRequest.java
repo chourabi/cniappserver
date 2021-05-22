@@ -76,6 +76,11 @@ public class VehiculeRequest {
 	@JoinColumn(name="vehicules_id")
 	private Vehicules vehicule;
 	
+	
+	@ManyToOne
+	@JoinColumn(name="drivers_id")
+	private Drivers driver;
+	
 	@ManyToOne
 	@JoinColumn(name="users_id")
 	private User employee;
@@ -84,6 +89,14 @@ public class VehiculeRequest {
 	
 	
 	
+	public Drivers getDriver() {
+		return driver;
+	}
+
+	public void setDriver(Drivers driver) {
+		this.driver = driver;
+	}
+
 	public String getCancelReason() {
 		return cancelReason;
 	}
