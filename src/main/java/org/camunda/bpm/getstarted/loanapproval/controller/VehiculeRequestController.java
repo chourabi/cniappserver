@@ -68,6 +68,37 @@ public class VehiculeRequestController {
 	DriversRepository driversRepository;
 	
 	
+	// delete approve
+	@GetMapping("/delete/{id}")
+	public void deleteRequest(@PathVariable(value ="id") Long id){
+		
+		VehiculeRequest tmp =  this.vehiculeRequestRepository.findById(id).get();
+		this.vehiculeRequestRepository.delete(tmp);
+		
+	}
+	@GetMapping("/clear")
+	public void deleteRequest( HttpServletRequest req ){
+		List<VehiculeRequest> tmp =  this.vehiculeRequestRepository.findAll();
+		
+        Optional<User> current;
+        String token = req.getHeader("authorization").replace("Bearer " ,"");
+        System.out.println(token);
+        String username=this.jwtProvider.getUserNameFromJwtToken(token);
+        current=this.userRepository.findByUsername(username);
+        
+        
+		for(VehiculeRequest vrt:tmp) {
+			if( vrt.getEmployee().getId() == current.get().getId() ) {
+				if( vrt.getStatus() == 2 || vrt.getStatus() == 3 ) {
+					this.vehiculeRequestRepository.delete(vrt);
+				}
+			}
+		}
+		
+	}
+	
+	
+	
 
 	// admin approve
 	@GetMapping("/approve/{id}")
@@ -85,6 +116,20 @@ public class VehiculeRequestController {
 		n.setSeen(false);
 		n.setUser(tmp.getEmployee());
 		this.notificationsRepository.save(n);
+		
+		// create notifications for the parc manager
+		Notifications parcNotif = new Notifications();
+		
+		parcNotif.setTitle("Vehicule request");
+		parcNotif.setMessage("The director has accepted a new véhicule request and the requester is waiting for your approval.");
+		 
+		parcNotif.setAdddate(   new Date(millis)  );
+		parcNotif.setSeen(false);
+		parcNotif.setUser( this.userRepository.findByUsername("park_manager").get() ) ;
+		this.notificationsRepository.save(parcNotif);
+		
+		
+		
 		return this.vehiculeRequestRepository.save(tmp);
 	}
 	
@@ -95,8 +140,9 @@ public class VehiculeRequestController {
 		
 		tmp.setDriver(driver);
 		
-		driver.setOnMission(true);
-		this.driversRepository.save(driver);
+
+
+		
 		
 		tmp.setStatus(2);
 		Vehicules v = tmp.getVehicule();
@@ -269,7 +315,12 @@ public class VehiculeRequestController {
 		 v.setStartLocation(model.getStart_location());
 		 v.setStartTime(model.getStart_time());
 		 
-		 v.setStatus(0);
+		 // if admin then directly to chef parc
+		 if(this.userRepository.findById(model.getEmployee_id()).get().getUsername().equals("super_admin")  ) {
+			 v.setStatus(1);
+		 }else {
+			 v.setStatus(0);
+		 }
 		 v.setReason(model.getResaon());
 		 v.setCargo(model.getCargo());
 		 v.setEmployee(this.userRepository.findById(model.getEmployee_id()).get());
@@ -386,13 +437,36 @@ public class VehiculeRequestController {
 				long millis=System.currentTimeMillis();  
 				n.setAdddate(   new Date(millis)  );
 				n.setSeen(false);
-				n.setUser(this.userRepository.findByUsername("super_admin").get());
-				this.notificationsRepository.save(n);
+				
+				
+				// if admin then directly to chef parc
+				 if(this.userRepository.findById(model.getEmployee_id()).get().getUsername().equals("super_admin")  ) {
+					 // to the parc manager
+					// create notifications for the parc manager
+						Notifications parcNotif = new Notifications();
+						
+						parcNotif.setTitle("Vehicule request");
+						parcNotif.setMessage("The director has accepted a new véhicule request and the requester is waiting for your approval.");
+						 
+						parcNotif.setAdddate(   new Date(millis)  );
+						parcNotif.setSeen(false);
+						parcNotif.setUser( this.userRepository.findByUsername("park_manager").get() ) ;
+						this.notificationsRepository.save(parcNotif);
+					 
+						
+				 }else {
+					 n.setUser(this.userRepository.findByUsername("super_admin").get());
+					 this.notificationsRepository.save(n);
+				 }
+				 
 				
 				res.setSuccess(true);
 				res.setMessage("Your request is successfully added.");
 				
 			 return res;
+			 
+			 
+			 
 		 }else {
 				res.setSuccess(false);
 				res.setMessage("We have no véhicules availabale at the chosen dates.");

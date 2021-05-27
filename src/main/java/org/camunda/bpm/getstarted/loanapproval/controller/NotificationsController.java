@@ -46,9 +46,30 @@ public class NotificationsController {
         
         for(Notifications n:tmp) {
         	if( n.getUser().getId() == current.get().getId() ) {
-        		if(n.isSeen() == false) {
-        			notifications.add(n);
-        		}
+        		notifications.add(n);
+        	}
+        }
+        
+		return notifications;
+	}
+	
+	
+	@GetMapping("/update")
+	public List<Notifications> updateConnectedUserNotifications( HttpServletRequest req ){
+		List<Notifications> tmp =  this.notificationsRepository.findAll();
+		
+        Optional<User> current;
+        String token = req.getHeader("authorization").replace("Bearer " ,"");
+        System.out.println(token);
+        String username=this.jwtProvider.getUserNameFromJwtToken(token);
+        current=this.userRepository.findByUsername(username);
+        
+        List<Notifications> notifications =  new ArrayList<Notifications>();
+        
+        for(Notifications n:tmp) {
+        	if( n.getUser().getId() == current.get().getId() ) {
+        		n.setSeen(true);
+        		this.notificationsRepository.save(n);
         	}
         }
         

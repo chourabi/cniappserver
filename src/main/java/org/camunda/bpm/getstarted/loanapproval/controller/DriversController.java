@@ -10,6 +10,7 @@ import org.camunda.bpm.getstarted.loanapproval.repository.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -27,6 +28,26 @@ public class DriversController {
 	public List<Drivers> getDriversList(){
 		return this.driversRepository.findAll();
 	}
+	
+	 @GetMapping("/details/{id}")
+	 public Drivers vehiculesDetails(@PathVariable(value ="id") Long id){
+		return  this.driversRepository.findById(id).get()  ;
+	 }
+	 
+	 
+	 @PostMapping("/update/{id}")
+	 public void updateVehicule(@PathVariable(value ="id") Long id,@RequestBody Drivers vm){
+		 vm.setId(id);
+		 
+		 Drivers d = vm;
+		 
+		 
+		 
+		 
+		 
+		 this.driversRepository.save(   d  );
+	 }
+	 
 	
 	
 	 @PostMapping("/add")
