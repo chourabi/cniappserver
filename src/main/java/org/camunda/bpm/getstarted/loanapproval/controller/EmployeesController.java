@@ -30,19 +30,17 @@ public class EmployeesController {
 	
 	
 	 @GetMapping("/delete/{id}")
-	 public ResponseJson deleteEmployee(@PathVariable(value ="id") Long id){
-		 ResponseJson rj = new ResponseJson();
-		 try {
-			 this.userRepository.delete(   this.userRepository.findById(id).get()  );
-			 rj.setSuccess(true);
-			 rj.setMessage("Employee '"+this.userRepository.findById(id).get().getName()+"' deleted successfully.");
-			 return rj;
+	 public void deleteEmployee(@PathVariable(value ="id") Long id){
+		
 			 
-		 }catch(Exception e) {
-			 rj.setSuccess(false);
-			 rj.setMessage("sorry but these employee cannot be deleted. ");
-			 return rj;
-		 }
+			 User x = this.userRepository.findById(id).get();
+			 
+			 x.setRoles(null);
+			 this.userRepository.save(x);
+			 
+			 
+			 this.userRepository.delete(   this.userRepository.findById(id).get()  );
+			
 	 }
 }
 

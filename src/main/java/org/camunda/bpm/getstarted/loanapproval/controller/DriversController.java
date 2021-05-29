@@ -3,10 +3,12 @@ package org.camunda.bpm.getstarted.loanapproval.controller;
 import java.util.List;
 
 import org.camunda.bpm.getstarted.loanapproval.entitys.Drivers;
+import org.camunda.bpm.getstarted.loanapproval.entitys.VehiculeRequest;
 import org.camunda.bpm.getstarted.loanapproval.entitys.Vehicules;
 import org.camunda.bpm.getstarted.loanapproval.model.User;
 import org.camunda.bpm.getstarted.loanapproval.repository.DriversRepository;
 import org.camunda.bpm.getstarted.loanapproval.repository.UserRepository;
+import org.camunda.bpm.getstarted.loanapproval.repository.VehiculeRequestRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -24,6 +26,9 @@ public class DriversController {
 	@Autowired
 	DriversRepository driversRepository;
 	
+	@Autowired
+	VehiculeRequestRepository vehiculeRequestRepository;
+	
 	@GetMapping("/list")
 	public List<Drivers> getDriversList(){
 		return this.driversRepository.findAll();
@@ -32,6 +37,25 @@ public class DriversController {
 	 @GetMapping("/details/{id}")
 	 public Drivers vehiculesDetails(@PathVariable(value ="id") Long id){
 		return  this.driversRepository.findById(id).get()  ;
+	 }
+	 
+	 @GetMapping("/delete/{id}")
+	 public void deleteDriver(@PathVariable(value ="id") Long id){
+		 Drivers x =   this.driversRepository.findById(id).get()  ;
+		 
+		 List<VehiculeRequest> tmp = this.vehiculeRequestRepository.findAll();
+		 
+		 for(VehiculeRequest t:tmp) {
+			 if( t.getDriver() != null ) {
+				 if( t.getDriver().getId() == x.getId() ) {
+					 this.vehiculeRequestRepository.delete(t);
+				 }
+			 }
+		 }
+		 
+		 
+		 
+		 this.driversRepository.delete(x);
 	 }
 	 
 	 

@@ -1,5 +1,6 @@
 package org.camunda.bpm.getstarted.loanapproval.entitys;
 
+import javax.persistence.CascadeType;
 import javax.persistence.Entity;
 import javax.persistence.GeneratedValue;
 import javax.persistence.GenerationType;
@@ -24,7 +25,7 @@ public class RequestsPassengers {
 	private User passenger;
 	
 	@ManyToOne
-	@JoinColumn(name="vehicules_request_id")
+	@JoinColumn(nullable = true,name="vehicules_request_id")
 	private VehiculeRequest request;
 
 	public Long getId() {

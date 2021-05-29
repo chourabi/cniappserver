@@ -73,16 +73,16 @@ public class VehiculeRequest {
 	
 	
 	@ManyToOne
-	@JoinColumn(name="vehicules_id")
+	@JoinColumn(nullable = true,name="vehicules_id")
 	private Vehicules vehicule;
 	
 	
 	@ManyToOne
-	@JoinColumn(name="drivers_id")
+	@JoinColumn(nullable = true,name="drivers_id")
 	private Drivers driver;
 	
 	@ManyToOne
-	@JoinColumn(name="users_id")
+	@JoinColumn(nullable = true,name="users_id")
 	private User employee;
 	
 	

@@ -24,7 +24,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
-
+import org.camunda.bpm.getstarted.loanapproval.message.request.EditRequest;
 import org.camunda.bpm.getstarted.loanapproval.message.request.LoginForm;
 import org.camunda.bpm.getstarted.loanapproval.message.request.SignUpForm;
 import org.camunda.bpm.getstarted.loanapproval.message.response.JwtResponse;
@@ -144,4 +144,58 @@ public class AuthRestAPIs {
 
         return ResponseEntity.ok().body(res);
     }
+    
+    @PostMapping("/update")
+    public ResponseEntity <?> updateUser(@Valid @RequestBody EditRequest EditRequest) {
+       
+       
+
+        // Creating user's account
+        User user = this.userRepository.findById(EditRequest.getId()).get();
+        
+        user.setCinId(EditRequest.getCindId());
+        user.setCategory(EditRequest.getCategory());
+
+        Set<String> strRoles = EditRequest.getRole();
+        Set<Role> roles = new HashSet<>();
+
+        strRoles.forEach(role -> {
+        	switch(role) {
+	    		case "ROLE_ADMIN":
+	    			Role adminRole = roleRepository.findByName(RoleName.ROLE_ADMIN)
+	                .orElseThrow(() -> new RuntimeException("Fail! -> Cause: User Role not find."));
+	    			roles.add(adminRole);
+	    			
+	    			break;
+	    		case "ROLE_PM":
+	            	Role pmRole = roleRepository.findByName(RoleName.ROLE_PM)
+	                .orElseThrow(() -> new RuntimeException("Fail! -> Cause: User Role not find."));
+	            	roles.add(pmRole);
+	            	
+	    			break;
+	    		default:
+	        		Role userRole = roleRepository.findByName(RoleName.ROLE_USER)
+	                .orElseThrow(() -> new RuntimeException("Fail! -> Cause: User Role not find."));
+	        		roles.add(userRole);        			
+        	}
+        });
+        
+        user.setRoles(roles);
+        user.setName(EditRequest.getName());
+        user.setEmail(EditRequest.getEmail());
+        
+        
+        
+        System.out.println(user.getName());
+        
+        userRepository.save(user);
+        
+        HashMap res = new HashMap();
+        res.put("success", true);
+
+        return ResponseEntity.ok().body(res);
+    }
+    
+    
+    
 }

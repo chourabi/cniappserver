@@ -31,7 +31,7 @@ public class Notifications {
     private String title;
     
 	@ManyToOne
-	@JoinColumn(name="users_id")
+	@JoinColumn(nullable = true,name="users_id")
 	private User user;
 
 
