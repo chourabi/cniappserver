@@ -297,6 +297,21 @@ public class VehiculeRequestController {
 	}
 	
 	
+	private List<VehiculeRequest>  getVehiculesRequestByCarId(long id) {
+		List<VehiculeRequest> allVehiculesRequests = this.vehiculeRequestRepository.findAll();
+		List<VehiculeRequest> res = new ArrayList<>();
+		
+		for(VehiculeRequest vr:allVehiculesRequests) {
+			if( vr.getVehicule().getId() == id ) {
+				res.add(vr);
+			}
+		}
+		
+		
+		
+		return res;
+		
+	}
 
 
 	  
@@ -329,20 +344,142 @@ public class VehiculeRequestController {
 		 
 		 // now we have to look for an avaivle vehicule
 		 
-		 Vehicules selectedVehicule = new Vehicules();
+		 Vehicules selectedVehicule = null;
 		 
 		 List<Vehicules> allVehicules = this.vehiculesRepository.findAll();
 		 List<VehiculeRequest> allVehiculesRequests = this.vehiculeRequestRepository.findAll();
 		 
 		 
-		 boolean canHaveAVehicule = true;
+		 boolean canHaveAVehicule = false;
 		 
-		 for(Vehicules tmp:allVehicules  ) {
-			 if( tmp.getIsOut() == false /* is available */ ) {
+		 LocalDateTime startAtrequest = LocalDateTime.parse( v.getStartDate()+"T"+v.getStartTime() );
+		 LocalDateTime endsAtRequest = LocalDateTime.parse( v.getArrivalDate()+"T"+v.getArrivalTime() );
+		 
+		 System.out.println("start date"+startAtrequest);
+		 System.out.println("end date"+endsAtRequest);
+		 
+		 if( allVehiculesRequests.isEmpty() ) {
+			 selectedVehicule = allVehicules.get(0);
+			 
+		 }else {
+			 for(Vehicules tmp:allVehicules  ) {
+				 if( tmp.getIsOut() == false  ) {
+					 System.out.println("we found a vehicule");
+					 
+					 	if( ! getVehiculesRequestByCarId(tmp.getId()).isEmpty() ) {
+					 		for(VehiculeRequest vr: getVehiculesRequestByCarId(tmp.getId())  ) {
+								
+								
+								
+								if( vr.getStatus() == 2 ) {
+									System.out.println("checking car reservation");
+									// this is request date
+									 LocalDateTime oldStartAtrequest = LocalDateTime.parse( vr.getStartDate()+"T"+vr.getStartTime() );
+									 LocalDateTime oldEndsAtRequest = LocalDateTime.parse( vr.getArrivalDate()+"T"+vr.getArrivalTime() );
+									 
+									 long requestStartTime =startAtrequest.atZone(ZoneId.systemDefault()).toInstant().toEpochMilli();
+									 long requestEndTime =endsAtRequest.atZone(ZoneId.systemDefault()).toInstant().toEpochMilli();
+									 long oldRequestStartTime =oldStartAtrequest.atZone(ZoneId.systemDefault()).toInstant().toEpochMilli();
+									 long oldRequestEndTime =oldEndsAtRequest.atZone(ZoneId.systemDefault()).toInstant().toEpochMilli();
+									 
+									 
+									 if( (requestEndTime < oldRequestStartTime ) && ( requestStartTime < requestEndTime ) ) {
+										 
+											 
+											 selectedVehicule = tmp; 
+										 
+									 }else if( ( requestStartTime > oldRequestEndTime ) && ( requestEndTime > requestStartTime ) ) {
+										 
+										 selectedVehicule = tmp;
+									 }
+								}else {
+									 System.out.println("car already reserved");
+									 selectedVehicule = tmp;
+								}
+								 
+							}
+					 	}else {
+					 		selectedVehicule = tmp;
+					 	}
+				 }
+			 }
+		 }
+		 
+		 if( selectedVehicule != null) {
+			 v.setVehicule(selectedVehicule);
+			 this.vehiculeRequestRepository.save(v);
+			 
+			 ProcessInstance  process = runtimeService.startProcessInstanceByKey("vehicule_request");
+			 runtimeService.setVariable(process.getId(), "status", 1);
+			 
+			 
+			 
+			 // update passengers
+			 List<Long> ids = model.getPassengers();
+			 
+			 for(Long id:ids) {
+				 RequestsPassengers  rp = new RequestsPassengers();
+				 
+				 rp.setPassenger(this.userRepository.findById(id).get());
+				 rp.setRequest(v);
+				 
+				 this.requestsPassengersRepository.save(rp);
+			 }
+
+			 
+			 Notifications n = new Notifications();
+				
+				n.setTitle("Vehicule request");
+				String fullnameEmployee = this.userRepository.findById(model.getEmployee_id()).get().getName();
+				n.setMessage("You have a new vehicule request from "+fullnameEmployee+".");
+				long millis=System.currentTimeMillis();  
+				n.setAdddate(   new Date(millis)  );
+				n.setSeen(false);
+				
+				
+				// if admin then directly to chef parc
+				 if(this.userRepository.findById(model.getEmployee_id()).get().getUsername().equals("super_admin")  ) {
+					 // to the parc manager
+					// create notifications for the parc manager
+						Notifications parcNotif = new Notifications();
+						
+						parcNotif.setTitle("Vehicule request");
+						parcNotif.setMessage("The director has accepted a new véhicule request and the requester is waiting for your approval.");
+						 
+						parcNotif.setAdddate(   new Date(millis)  );
+						parcNotif.setSeen(false);
+						parcNotif.setUser( this.userRepository.findByUsername("park_manager").get() ) ;
+						this.notificationsRepository.save(parcNotif);
+					 
+						
+				 }else {
+					 n.setUser(this.userRepository.findByUsername("super_admin").get());
+					 this.notificationsRepository.save(n);
+				 }
+				 
+				
+				res.setSuccess(true);
+				res.setMessage("Your request is successfully added.");
+				
+			 return res;
+			 
+			 
+			 
+		 }else {
+				res.setSuccess(false);
+				res.setMessage("We have no véhicules availabale at the chosen dates.");
+			 return res;
+		 }
+		 
+
+		 
+		 
+		 /*for(Vehicules tmp:allVehicules  ) {
+			 if( tmp.getIsOut() == false  ) {
 				 // check for reservations date
 				 System.out.println("we found a vehicule");
-				 LocalDateTime startAtrequest = LocalDateTime.parse( v.getStartDate()+"T"+v.getStartTime() );
-				 LocalDateTime endsAtRequest = LocalDateTime.parse( v.getArrivalDate()+"T"+v.getArrivalTime() );
+				 
+				 
 				 
 				 
 				 
@@ -471,7 +608,7 @@ public class VehiculeRequestController {
 				res.setSuccess(false);
 				res.setMessage("We have no véhicules availabale at the chosen dates.");
 			 return res;
-		 }
+		 }*/
 		 
 		 
 
